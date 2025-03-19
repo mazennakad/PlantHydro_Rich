@@ -1,10 +1,10 @@
-function K=Fconductance(psi)
-R=0.5; %typical radius for a xylem
-Az=pi*R.^2; %cross-sectional area
-Am=0.01 %Scaling coefficient
-ED=2.44; %(took it from FETCH paper, for Norway spruce)
-kmax=1.36*10^(-8); %maximal xylmem conductance 
-c1=4.8^10^(-6); %empirical curve fitting coefficient-cavitation pressure
-c2=3.5;   %empirical curve fitting coefficent for conductance
+function K=Fconductance(psi,Az,Am,ED,kmax,c1,c2)
+%Az cross-sectional area
+%Am Scaling coefficient
+%ED scaling exponent for effective conductivity (for Norway spruce)
+% kmax maximal xylmem conductance 
+%c1 mpirical curve fitting coefficient-cavitation pressure
+%c2 empirical curve fitting coefficent for conductance
+
 Aaz=(Az/Am).^((ED-2)/2).*Az;   %Effective cross-sectional area
 K=Aaz.*kmax.^exp(-(-psi./c1).^c2);

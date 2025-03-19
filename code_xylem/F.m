@@ -1,18 +1,17 @@
-function [F_values]=F(psi,psizero)
-L=2;   %length of the xylem
-i=5;   %number of sections into which the tree is divided
-g=9.81;  %constant of gravitational acceleration
-po=999;  %water density
-dz=L/i;  %distance between each iteration
-dt=0.05;
-F_values=zeros(1,i)
-for j=2:1:i
-if j==1
-    psi(j-1)=0;
-elseif j==i
-    psi(j+1)=0
-end
-C=Fcapacitance(psi(j))
-K=Fconductance(psi(j))
-F_values(j)=C.*((psi(j)-psizero(j)))/dt-((K.*(psi(j+1)-psi(j))./dz+po.*g)-(K.*(psi(j)-psi(j-1))./dz+po.*g))./dz
-end
+function [F_values]=F(psi,psip,n,g,rho,dz,dt,C,K,T)
+
+% psi is the xylem water potential is Pa
+% psip is the xylem water potential at previous iteration
+% L is the stem length
+% n is the number of grids
+% g is the gravitational constant
+% dz is the grid size
+% dt is the time step
+
+F_values = zeros(1,n);
+F_values(n) = C(n).*( psi(n) - psip(n) )./dt ...
+    - T./dz + K(n-1).*( ( psi(n)-psi(n-1) )./dz +rho*g )./dz;
+F_values(2:n-1) = C(2:n-1).*( psi(2:n-1) - psip(2:n-1) )./dt ...
+    - K(2:n-1).*( ( psi(3:n)-psi(2:n-1) )./dz + rho.*g )./dz ...
+    + K(1:n-2).*( ( psi(2:n-1)-psi(1:n-2) )./dz +rho*g )./dz;
+
