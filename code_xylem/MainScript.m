@@ -1,16 +1,16 @@
-n=5;  %Number of grids
+n=1000;  %Number of grids
 L=2;   %length of the xylem
 g=9.81;  %constant of gravitational acceleration
 rho=1000;  %water density
 dz=L/n;  % grid size
 dt=0.05; %time step
 t=0:dt:200*dt; % duration of simulation
-T = 0.1; % transpiration
+T = 0; % transpiration
 
 % capacitance constants
 thetasat=573.5;  %water content at saturation
 psi0=5.74*10^8;  %empirical paramter for water pressure of dry xylem
-R=0.5;      %typical radius for a xylem
+R=0.01;      %typical radius for a xylem
 Az=pi*R.^2; %cross-sectional area for a xylem
 p=20;       %empirical curve fitting coefficient for water content
 
@@ -22,8 +22,9 @@ c1=4.8*10^(-6); %empirical curve fitting coefficient-cavitation pressure
 c2=3.5;   %empirical curve fitting coefficent for conductance
 n=5;
 psis=-783.77;   %water pressure at the base of the xylem
-psik = zeros(n,1);   %psi at iteration 1 at the base of the xylem
-psik(1) = psis;
+%psik = psis.*ones(n,1);   %psi at iteration 1 at the base of the xylem
+psik = linspace(psis,0,n);
+%psik(1) = psis;
 psi = psik;
 C = CapacitanceFunction(psi,thetasat,psi0,Az,p);
 K = ConductanceFunction(psi,Az,Am,ED,kmax,c1,c2);
@@ -32,41 +33,51 @@ F_values=MainFunction(psi,psik,n,g,rho,dz,dt,C,K,T);
 %initializing parameters
 
 
-m=3;
+m=500;
 h=zeros(m+1,m);  %Hessenberg matrix
 w=zeros(n,1);  %w=Jv
 Vm=zeros(n,m);
 eps = 1e-8;
 e1=zeros(m+1,1);
 e1(1)=1;
-while r>1e-9
+r = -(MainFunction(psi,psik,n,g,rho,dz,dt,C,K,T));
+norm(r)
+while norm(r)>1e-9
 for i=1:m
     if i==1
-        r=-(MainFunction(psi,psik,n,g,rho,dz,dt,C,K,T)); %residual
+        %r=-(MainFunction(psi,psik,n,g,rho,dz,dt,C,K,T)); %residual
         rn=norm(r);
-        v = r./rn;
-    else
-
+        v = r./rn;  
     end
     Vm(:,i) = v;
-    w=(MainFunction(psi+eps.*v,psik,n,g,rho,dz,dt,C,K,T)-MainFunction(psi,psik,n,g,rho,dz,dt,C,K,T))/eps;
-h(i,i)=Vm(:,i)'.*w;
-    wp=w;
+    w=(MainFunction(psi+eps.*v,psik,n,g,rho,dz,dt,C,K,T)-MainFunction(psi,psik,n,g,rho,dz,dt,C,K,T))./eps;
+    wp = w;
+
+    %h(i,i)=Vm(:,i)'.*w;
+    %wp= w - h(i,i).*Vm(:,i);
+    %h(i+1,i) = norm(wp);
+    %v = wp./h(i+1,i);
+
     for j=1:i
-    h(j, i) = Vm(:, j)' * wp;
-    wp=wp-h(j,i).*Vm(:,j);
+        h(j, i) = Vm(:, j)' * w;
+        wp=wp-h(j,i).*Vm(:,j);
     end
     h(i+1,i)=norm(wp);
-    if h(i + 1, i) ~= 0
-    v = wp ./ h(i + 1, i);
-else
-    break
-    end
+    v = wp./h(i+1,i);
+    %if h(i + 1, i) ~= 0
+    %    v = wp ./ h(i + 1, i);
+    %else
+    %    break
+    %end
 end
-y=-rn.*e1(1:i+1)./h(1:i+1,1:i);
-deltap=Vm(:,1:i)*y;
+y = h \ (-rn.*e1(1:i+1));
+% y=-rn.*e1(1:i+1)./h(1:i+1,1:i);
+deltap=mtimes(Vm,y);
 psi=psi+deltap;
+C = CapacitanceFunction(psi,thetasat,psi0,Az,p);
+K = ConductanceFunction(psi,Az,Am,ED,kmax,c1,c2);
 r=-(MainFunction(psi,psik,n,g,rho,dz,dt,C,K,T));
+norm(r)
 end
 
 
